@@ -10,6 +10,7 @@ import sys
 import time
 from dataclasses import dataclass, field
 from datetime import date, datetime, time as dt_time, timedelta, timezone
+from pathlib import Path
 from typing import Any, Iterable, Optional
 from zoneinfo import ZoneInfo
 
@@ -51,6 +52,7 @@ class SourceConfig:
     future_days: int
     update_mode: str
     missing_policy: str
+    source_type: str = "URL"
 
 
 @dataclass
@@ -166,8 +168,11 @@ class NotionClient:
         )
 
 
-def title_value(value: str) -> dict[str, Any]:
-    return {"title": [{"type": "text", "text": {"content": value[:2000]}}]}
+def title_value(value: str, strikethrough: bool = False) -> dict[str, Any]:
+    item: dict[str, Any] = {"type": "text", "text": {"content": value[:2000]}}
+    if strikethrough:
+        item["annotations"] = {"strikethrough": True}
+    return {"title": [item]}
 
 
 def text_value(value: str) -> dict[str, Any]:
@@ -266,6 +271,8 @@ def calendar_color(item_type: str, commitment: str) -> str:
         return "Test"
     if item_type == "Homework":
         return "Homework"
+    if commitment == "No":
+        return "No"
     if commitment == "Done":
         return "Done"
     return "Committed" if commitment == "Committed" else "Maybe"
@@ -278,7 +285,8 @@ def load_sources(notion: NotionClient, sources_id: str) -> list[SourceConfig]:
     )
     sources: list[SourceConfig] = []
     for page in pages:
-        ics_url = get_url(page, SOURCES["ics_url"])
+        source_type = get_select(page, SOURCES["source_type"]) or "URL"
+        ics_url = get_url(page, SOURCES["ics_url"]) or get_text(page, SOURCES["file_path"])
         if not ics_url:
             continue
         sources.append(
@@ -286,6 +294,7 @@ def load_sources(notion: NotionClient, sources_id: str) -> list[SourceConfig]:
                 page_id=page["id"],
                 name=get_title(page, SOURCES["name"]) or "Unnamed calendar",
                 ics_url=ics_url,
+                source_type=source_type,
                 area=get_select(page, SOURCES["default_area"]),
                 commitment=get_select(page, SOURCES["default_commitment"]) or "Maybe",
                 item_type=get_select(page, SOURCES["default_type"]) or "Event",
@@ -304,7 +313,16 @@ def load_sources(notion: NotionClient, sources_id: str) -> list[SourceConfig]:
     return sources
 
 
-def fetch_ics(url: str) -> bytes:
+def fetch_ics(url: str, source_type: str = "URL") -> bytes:
+    if source_type == "Repository file":
+        root = Path(__file__).resolve().parent
+        path = (root / url).resolve()
+        if root not in path.parents or not path.is_file():
+            raise RuntimeError(f"Calendar file not found inside repository: {url}")
+        body = path.read_bytes()
+        if b"BEGIN:VCALENDAR" not in body[:10000]:
+            raise RuntimeError("Repository file is not an ICS calendar")
+        return body
     response = requests.get(
         url,
         timeout=HTTP_TIMEOUT_SECONDS,
@@ -424,7 +442,8 @@ def new_event_properties(source: SourceConfig, event: Event, now: str) -> dict[s
         SCHEDULE["name"]: title_value(event.name),
         SCHEDULE["date"]: date_value(event.start, event.end),
         SCHEDULE["type"]: select_value(source.item_type),
-        SCHEDULE["commitment"]: status_value(source.commitment),
+        SCHEDULE["commitment"]: select_value(source.commitment),
+        SCHEDULE["status"]: status_value(source.commitment),
         SCHEDULE["calendar_source"]: relation_value(source.page_id),
         SCHEDULE["external_id"]: text_value(event.external_id),
         SCHEDULE["source_name"]: text_value(event.name),
@@ -472,8 +491,11 @@ def update_event_properties(
         SCHEDULE["import_source"]: select_value("ICS"),
     }
 
-    if follow or name_is_unedited:
-        props[SCHEDULE["name"]] = title_value(event.name)
+    commitment = get_select(page, SCHEDULE["commitment"]) or source.commitment
+    if not get_select(page, SCHEDULE["commitment"]):
+        props[SCHEDULE["commitment"]] = select_value(commitment)
+    if follow or name_is_unedited or commitment == "No":
+        props[SCHEDULE["name"]] = title_value(event.name, strikethrough=commitment == "No")
     elif personal_name != event.name:
         preserved += 1
 
@@ -485,7 +507,6 @@ def update_event_properties(
         preserved += 1
 
     item_type = get_select(page, SCHEDULE["type"]) or source.item_type
-    commitment = get_status(page, SCHEDULE["commitment"]) or source.commitment
     props[SCHEDULE["calendar_color"]] = select_value(
         calendar_color(item_type, commitment)
     )
@@ -595,7 +616,7 @@ def sync_source(
     stats: Stats,
 ) -> None:
     now = datetime.now(timezone.utc).isoformat()
-    events = parse_events(source, fetch_ics(source.ics_url))
+    events = parse_events(source, fetch_ics(source.ics_url, source.source_type))
     existing = existing_for_source(notion, schedule_id, source.page_id)
     seen_ids: set[str] = set()
     for event in events:
@@ -696,4 +717,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

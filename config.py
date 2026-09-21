@@ -17,6 +17,7 @@ SCHEDULE = {
     "date": "Date",
     "type": "Type",
     "commitment": "Commitment",
+    "status": "Status",
     "area": "Area",
     "notes": "Notes",
     "calendar_source": "Calendar Source",
@@ -30,11 +31,15 @@ SCHEDULE = {
     "sync_managed": "Sync Managed",
     "import_source": "Import Source",
     "calendar_color": "Calendar Color",
+    "canvas_assignment_id": "Canvas Assignment ID",
+    "canvas_course_id": "Canvas Course ID",
 }
 
 SOURCES = {
     "name": "Name",
     "ics_url": "ICS URL",
+    "file_path": "File Path",
+    "source_type": "Source Type",
     "enabled": "Enabled",
     "default_area": "Default Area",
     "default_commitment": "Default Commitment",
@@ -69,4 +74,3 @@ FOLLOW_SOURCE = "Always follow source"
 MARK_MISSING = "Mark missing"
 ARCHIVE_UNCHANGED = "Archive unchanged"
 IGNORE_MISSING = "Ignore"
-

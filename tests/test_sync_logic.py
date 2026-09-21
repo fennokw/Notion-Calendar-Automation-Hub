@@ -18,6 +18,7 @@ def test_calendar_color_priority():
     assert calendar_color("Event", "Committed") == "Committed"
     assert calendar_color("Event", "Maybe") == "Maybe"
     assert calendar_color("Task", "Done") == "Done"
+    assert calendar_color("Event", "No") == "No"
 
 
 def test_dates_match_ignores_unrelated_keys():
@@ -60,7 +61,7 @@ def test_personal_name_and_date_are_preserved():
             "Source Name": {"rich_text": [{"plain_text": "Practice"}]},
             "Source Date": {"date": {"start": "2026-09-18T16:00:00-04:00", "end": "2026-09-18T18:00:00-04:00"}},
             "Type": {"select": {"name": "Event"}},
-            "Commitment": {"status": {"name": "Committed"}},
+            "Commitment": {"select": {"name": "Committed"}},
         }
     }
     event = Event(
@@ -104,7 +105,7 @@ def test_unedited_personal_fields_follow_source_change():
             "Source Name": {"rich_text": [{"plain_text": "Practice"}]},
             "Source Date": {"date": old_date},
             "Type": {"select": {"name": "Event"}},
-            "Commitment": {"status": {"name": "Committed"}},
+            "Commitment": {"select": {"name": "Committed"}},
         }
     }
     event = Event(
