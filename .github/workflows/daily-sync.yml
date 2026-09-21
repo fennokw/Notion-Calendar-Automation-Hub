@@ -16,6 +16,8 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      CANVAS_TOKEN: ${{ secrets.CANVAS_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -37,15 +39,14 @@ jobs:
         run: python sync_ics_to_notion.py
 
       - name: Sync Canvas assignments
-        if: ${{ secrets.CANVAS_TOKEN != '' }}
+        if: ${{ env.CANVAS_TOKEN != '' }}
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-          CANVAS_TOKEN: ${{ secrets.CANVAS_TOKEN }}
           CANVAS_BASE_URL: https://canvas.mit.edu
           SCHEDULE_DATABASE_ID: ${{ vars.SCHEDULE_DATABASE_ID }}
           CALENDAR_SOURCES_DATABASE_ID: ${{ vars.CALENDAR_SOURCES_DATABASE_ID }}
         run: python sync_canvas_to_notion.py
 
       - name: Canvas token status
-        if: ${{ secrets.CANVAS_TOKEN == '' }}
+        if: ${{ env.CANVAS_TOKEN == '' }}
         run: echo "Canvas sync skipped because CANVAS_TOKEN is not configured."
