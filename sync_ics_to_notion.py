@@ -443,7 +443,6 @@ def new_event_properties(source: SourceConfig, event: Event, now: str) -> dict[s
         SCHEDULE["date"]: date_value(event.start, event.end),
         SCHEDULE["type"]: select_value(source.item_type),
         SCHEDULE["commitment"]: select_value(source.commitment),
-        SCHEDULE["status"]: status_value(source.commitment),
         SCHEDULE["calendar_source"]: relation_value(source.page_id),
         SCHEDULE["external_id"]: text_value(event.external_id),
         SCHEDULE["source_name"]: text_value(event.name),
@@ -659,7 +658,11 @@ def main() -> int:
     schedule_id = notion.data_source_id(SCHEDULE_DATABASE_ID)
     sources_id = notion.data_source_id(CALENDAR_SOURCES_DATABASE_ID)
     runs_id = notion.data_source_id(SYNC_RUNS_DATABASE_ID) if SYNC_RUNS_DATABASE_ID else None
-    validate_required_schema(notion, schedule_id, SCHEDULE.values())
+    validate_required_schema(
+        notion,
+        schedule_id,
+        (name for key, name in SCHEDULE.items() if key != "status"),
+    )
     validate_required_schema(notion, sources_id, SOURCES.values())
 
     sources = load_sources(notion, sources_id)
