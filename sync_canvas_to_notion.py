@@ -113,7 +113,6 @@ def properties(item: dict[str, Any], course: dict[str, Any], existing: Optional[
         SCHEDULE["date"]: date_value(item["due_at"]),
         SCHEDULE["type"]: select_value(kind),
         SCHEDULE["commitment"]: select_value(commitment),
-        SCHEDULE["status"]: status_value("Done" if done else "Maybe"),
         SCHEDULE["area"]: {"multi_select": [{"name": "School"}]},
         SCHEDULE["notes"]: text_value(course.get("name") or "Canvas"),
         SCHEDULE["external_id"]: text_value(f"canvas:{item['id']}"),
