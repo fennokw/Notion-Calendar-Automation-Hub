@@ -43,6 +43,7 @@ jobs:
           CANVAS_TOKEN: ${{ secrets.CANVAS_TOKEN }}
           CANVAS_BASE_URL: https://canvas.mit.edu
           SCHEDULE_DATABASE_ID: ${{ vars.SCHEDULE_DATABASE_ID }}
+          CALENDAR_SOURCES_DATABASE_ID: ${{ vars.CALENDAR_SOURCES_DATABASE_ID }}
         run: python sync_canvas_to_notion.py
 
       - name: Canvas token status
