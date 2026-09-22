@@ -1,4 +1,4 @@
-"""Schema names and safe defaults for the editable ICS → Notion sync."""
+"""Schema names and safe defaults for the Notion Calendar Automation Hub."""
 
 from __future__ import annotations
 
