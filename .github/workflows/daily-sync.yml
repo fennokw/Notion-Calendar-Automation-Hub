@@ -1,4 +1,4 @@
-name: Editable ICS to Notion Sync
+name: Notion Calendar Automation Hub
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: editable-ics-notion-sync
+  group: notion-calendar-automation-hub
   cancel-in-progress: false
 
 jobs:
