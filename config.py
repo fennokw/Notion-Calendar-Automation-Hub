@@ -38,6 +38,7 @@ SOURCES = {
     "name": "Name",
     "ics_url": "ICS URL",
     "file_path": "File Path",
+    "secret_key": "Secret Key",
     "source_type": "Source Type",
     "enabled": "Enabled",
     "default_area": "Default Area",
