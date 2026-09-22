@@ -156,9 +156,8 @@ def main() -> int:
         try:
             course_quizzes = quizzes(course_id)
         except Exception as exc:
-            errors += 1
             course_quizzes = []
-            print(f"ERROR {course.get('name')}: quizzes: {exc}", file=sys.stderr)
+            print(f"WARNING {course.get('name')}: quizzes unavailable: {exc}", file=sys.stderr)
 
         quiz_assignment_ids = {
             int(quiz["assignment_id"])
