@@ -39,7 +39,7 @@ jobs:
         run: python sync_ics_to_notion.py
 
       - name: Sync Canvas assignments
-        if: ${{ env.CANVAS_TOKEN != '' }}
+        if: ${{ !cancelled() && env.CANVAS_TOKEN != '' }}
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           CANVAS_BASE_URL: https://canvas.mit.edu
@@ -48,5 +48,5 @@ jobs:
         run: python sync_canvas_to_notion.py
 
       - name: Canvas token status
-        if: ${{ env.CANVAS_TOKEN == '' }}
+        if: ${{ !cancelled() && env.CANVAS_TOKEN == '' }}
         run: echo "Canvas sync skipped because CANVAS_TOKEN is not configured."
