@@ -181,3 +181,19 @@ END:VCALENDAR\r
     events = parse_events(source, body)
     assert events[0].start == "2026-09-18"
     assert events[0].end == "2026-09-19"
+
+
+def test_google_calendar_share_link_converts_to_public_ics():
+    from sync_ics_to_notion import google_calendar_share_to_ics
+
+    share = "https://calendar.google.com/calendar/u/2?cid=OGI2YTkwNjg0MzBhN2E4NjdmMzdlOWZlNTU2MTllYTMzNGZkNzBkN2ZiYTZkMDMyMjg3YTJiM2E5NTgwOTBhNEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t"
+    result = google_calendar_share_to_ics(share)
+    assert result.endswith("/public/basic.ics")
+    assert "group.calendar.google.com" in result
+
+
+def test_non_google_url_is_unchanged():
+    from sync_ics_to_notion import google_calendar_share_to_ics
+
+    url = "https://example.com/team.ics"
+    assert google_calendar_share_to_ics(url) == url
