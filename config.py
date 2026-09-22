@@ -30,7 +30,6 @@ SCHEDULE = {
     "source_fingerprint": "Source Fingerprint",
     "sync_managed": "Sync Managed",
     "import_source": "Import Source",
-    "calendar_color": "Calendar Color",
     "canvas_assignment_id": "Canvas Assignment ID",
     "canvas_course_id": "Canvas Course ID",
 }
