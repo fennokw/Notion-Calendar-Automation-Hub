@@ -11,6 +11,7 @@ On a later sync:
 - If you did not edit `Name` or `Date`, a source change flows through automatically.
 - If you changed either field, your personal version is preserved while `Source Name` and `Source Date` update.
 - `Commitment`, `Area`, `Type`, and `Notes` are never reset after creation.
+- Canvas quizzes are imported as `Test` records, including quizzes that are not backed by a normal Canvas Assignment object.
 - Missing or cancelled source events are marked instead of silently destroying your personal copy.
 
 ## Architecture
@@ -56,7 +57,6 @@ Hidden sync fields:
 | `Source Fingerprint` | Text | Change detection metadata |
 | `Sync Managed` | Checkbox | Separates imports from manual rows |
 | `Import Source` | Select | Manual, ICS, Canvas |
-| `Calendar Color` | Select | Committed, Maybe, Homework, Test, Done |
 
 ### Calendar Sources
 
@@ -136,17 +136,16 @@ If the shared calendar later moves practice to 4:30–6:30 PM, the row becomes:
 
 The sync detects the personal override by comparing the editable fields to the previous source baseline.
 
-## Calendar color
+## Notion Calendar color feeds
 
-The sync maintains `Calendar Color` with this priority:
+Notion Calendar assigns color at the calendar/view level, not per database row. To keep one source of truth without duplicating events, create filtered views of `Schedule & Tasks` and add those views separately to Notion Calendar:
 
-1. Test → red
-2. Homework → yellow
-3. Done → blue
-4. Committed → green/teal
-5. Maybe → gray
+1. `Committed · Green` — Event/Task + Commitment = Committed
+2. `Maybe · Gray` — Event/Task + Commitment = Maybe
+3. `Declined · Dark Gray` — Commitment = No
+4. `Homework & Tests · Red` — Type = Homework or Test, unless Commitment = No
 
-In the Notion UI, set the Calendar view's **Color by** property to `Calendar Color`. The current API can create and configure views but cannot set that color-by control, so this is the one manual view setting.
+Every feed points to the same underlying Notion pages. Editing a title, date, commitment, type, area, or notes field from any feed immediately updates the original record and all other views. There is no mirror database and no synchronization delay.
 
 ## Local development
 
