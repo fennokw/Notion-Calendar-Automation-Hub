@@ -372,6 +372,20 @@ def event_external_id(
 
 def parse_events(source: SourceConfig, body: bytes) -> list[Event]:
     calendar = Calendar.from_ical(body)
+    # Some calendar exporters repeat identical singleton dates. Collapse only
+    # equivalent values; conflicting dates must fail rather than import wrong times.
+    for component in calendar.walk():
+        for field_name in ("DTSTART", "DTEND", "DURATION", "RECURRENCE-ID"):
+            values = component.get(field_name)
+            if not isinstance(values, list):
+                continue
+            if not values or any(
+                value.to_ical() != values[0].to_ical()
+                or value.params != values[0].params
+                for value in values[1:]
+            ):
+                raise ValueError(f"Conflicting duplicate {field_name} in calendar export")
+            component[field_name] = values[0]
     zone = ZoneInfo(DEFAULT_TIMEZONE)
     now = datetime.now(timezone.utc)
     window_start = now - timedelta(days=source.past_days)
