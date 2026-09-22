@@ -74,8 +74,18 @@ def assignments(course_id: int) -> list[dict[str, Any]]:
     )
 
 
-def assignment_type(name: str) -> str:
-    lowered = name.lower()
+def quizzes(course_id: int) -> list[dict[str, Any]]:
+    return canvas_get(
+        f"/api/v1/courses/{course_id}/quizzes",
+        {"per_page": 100},
+    )
+
+
+def assignment_type(item: dict[str, Any], quiz_assignment_ids: set[int]) -> str:
+    assignment_id = item.get("id")
+    if assignment_id in quiz_assignment_ids:
+        return "Test"
+    lowered = (item.get("name") or "").lower()
     return "Test" if any(word in lowered for word in TEST_WORDS) else "Homework"
 
 
@@ -101,8 +111,14 @@ def existing_assignments(notion: NotionClient, schedule_id: str) -> dict[str, di
     return result
 
 
-def properties(item: dict[str, Any], course: dict[str, Any], existing: Optional[dict[str, Any]]) -> dict[str, Any]:
-    kind = assignment_type(item.get("name") or "")
+def properties(
+    item: dict[str, Any],
+    course: dict[str, Any],
+    existing: Optional[dict[str, Any]],
+    kind: str,
+    *,
+    record_key: Optional[str] = None,
+) -> dict[str, Any]:
     commitment = get_select(existing, SCHEDULE["commitment"]) if existing else None
     commitment = commitment or "Maybe"
     submission = item.get("submission") or {}
@@ -124,8 +140,7 @@ def properties(item: dict[str, Any], course: dict[str, Any], existing: Optional[
         SCHEDULE["source_fingerprint"]: text_value(str(item.get("updated_at") or item["due_at"])),
         SCHEDULE["sync_managed"]: checkbox_value(True),
         SCHEDULE["import_source"]: select_value("Canvas"),
-        SCHEDULE["calendar_color"]: select_value(kind),
-        SCHEDULE["canvas_assignment_id"]: text_value(str(item["id"])),
+        SCHEDULE["canvas_assignment_id"]: text_value(record_key or str(item["id"])),
         SCHEDULE["canvas_course_id"]: text_value(str(course["id"])),
     }
 
@@ -137,13 +152,27 @@ def main() -> int:
     created = updated = skipped = errors = 0
     courses = active_courses()
     for course in courses:
-        for item in assignments(int(course["id"])):
+        course_id = int(course["id"])
+        try:
+            course_quizzes = quizzes(course_id)
+        except Exception as exc:
+            course_quizzes = []
+            print(f"WARNING {course.get('name')}: quizzes unavailable: {exc}", file=sys.stderr)
+
+        quiz_assignment_ids = {
+            int(quiz["assignment_id"])
+            for quiz in course_quizzes
+            if quiz.get("assignment_id") is not None
+        }
+
+        for item in assignments(course_id):
             if item.get("published") is False or not in_window(item.get("due_at")):
                 skipped += 1
                 continue
             key = str(item["id"])
             try:
-                props = properties(item, course, existing.get(key))
+                kind = assignment_type(item, quiz_assignment_ids)
+                props = properties(item, course, existing.get(key), kind)
                 if key in existing:
                     notion.update_page(existing[key]["id"], props)
                     updated += 1
@@ -153,6 +182,43 @@ def main() -> int:
             except Exception as exc:
                 errors += 1
                 print(f"ERROR {course.get('name')}: {item.get('name')}: {exc}", file=sys.stderr)
+
+        # Some Canvas quizzes are not backed by an Assignment object. Import
+        # those directly so tests/quizzes cannot silently disappear.
+        for quiz in course_quizzes:
+            if quiz.get("assignment_id") is not None:
+                continue
+            due_at = quiz.get("due_at")
+            if quiz.get("published") is False or not in_window(due_at):
+                skipped += 1
+                continue
+            key = f"quiz:{quiz['id']}"
+            quiz_item = {
+                "id": quiz["id"],
+                "name": quiz.get("title") or "Untitled quiz",
+                "due_at": due_at,
+                "html_url": quiz.get("html_url"),
+                "updated_at": quiz.get("updated_at") or due_at,
+                "submission": {},
+            }
+            try:
+                props = properties(
+                    quiz_item,
+                    course,
+                    existing.get(key),
+                    "Test",
+                    record_key=key,
+                )
+                props[SCHEDULE["external_id"]] = text_value(f"canvas:{key}")
+                if key in existing:
+                    notion.update_page(existing[key]["id"], props)
+                    updated += 1
+                else:
+                    notion.create_page(schedule_id, props)
+                    created += 1
+            except Exception as exc:
+                errors += 1
+                print(f"ERROR {course.get('name')}: {quiz_item.get('name')}: {exc}", file=sys.stderr)
     print(json.dumps({"courses": len(courses), "created": created, "updated": updated, "skipped": skipped, "errors": errors}, indent=2))
     return 1 if errors else 0
 

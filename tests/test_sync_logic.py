@@ -10,15 +10,12 @@ def required_environment(monkeypatch):
     monkeypatch.setenv("CALENDAR_SOURCES_DATABASE_ID", "sources")
 
 
-def test_calendar_color_priority():
-    from sync_ics_to_notion import calendar_color
+def test_canvas_assignment_type_detects_quiz_links_and_names():
+    from sync_canvas_to_notion import assignment_type
 
-    assert calendar_color("Test", "Committed") == "Test"
-    assert calendar_color("Homework", "Maybe") == "Homework"
-    assert calendar_color("Event", "Committed") == "Committed"
-    assert calendar_color("Event", "Maybe") == "Maybe"
-    assert calendar_color("Task", "Done") == "Done"
-    assert calendar_color("Event", "No") == "No"
+    assert assignment_type({"id": 42, "name": "Week 3 Check"}, {42}) == "Test"
+    assert assignment_type({"id": 43, "name": "Midterm 1"}, set()) == "Test"
+    assert assignment_type({"id": 44, "name": "Problem Set 4"}, set()) == "Homework"
 
 
 def test_dates_match_ignores_unrelated_keys():
