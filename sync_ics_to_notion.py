@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, time as dt_time, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable, Optional
+from urllib.parse import parse_qs, quote, urlparse
 from zoneinfo import ZoneInfo
 
 import recurring_ical_events
@@ -38,6 +39,7 @@ NOTION_TOKEN = os.environ["NOTION_TOKEN"]
 SCHEDULE_DATABASE_ID = os.environ["SCHEDULE_DATABASE_ID"]
 CALENDAR_SOURCES_DATABASE_ID = os.environ["CALENDAR_SOURCES_DATABASE_ID"]
 SYNC_RUNS_DATABASE_ID = os.getenv("SYNC_RUNS_DATABASE_ID", "").strip()
+SHARED_CALENDAR_URLS_JSON = os.getenv("SHARED_CALENDAR_URLS_JSON", "").strip()
 
 
 @dataclass
@@ -267,15 +269,60 @@ def dates_match(left: Optional[dict[str, Any]], right: Optional[dict[str, Any]])
 
 
 
+def load_secret_calendar_urls() -> dict[str, str]:
+    if not SHARED_CALENDAR_URLS_JSON:
+        return {}
+    try:
+        data = json.loads(SHARED_CALENDAR_URLS_JSON)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"SHARED_CALENDAR_URLS_JSON is invalid JSON: {exc}") from exc
+    if not isinstance(data, dict):
+        raise RuntimeError("SHARED_CALENDAR_URLS_JSON must be a JSON object")
+    return {
+        str(key).strip(): str(value).strip()
+        for key, value in data.items()
+        if str(key).strip() and str(value).strip()
+    }
+
+
+def google_calendar_share_to_ics(url: str) -> str:
+    parsed = urlparse(url)
+    if parsed.netloc not in {"calendar.google.com", "www.google.com"}:
+        return url
+    cid_values = parse_qs(parsed.query).get("cid")
+    if not cid_values:
+        return url
+    import base64
+    cid = cid_values[0]
+    try:
+        calendar_id = base64.b64decode(cid + "=" * (-len(cid) % 4)).decode("utf-8")
+    except Exception:
+        calendar_id = cid
+    return f"https://calendar.google.com/calendar/ical/{quote(calendar_id, safe='@')}/public/basic.ics"
+
+
 def load_sources(notion: NotionClient, sources_id: str) -> list[SourceConfig]:
     pages = notion.query(
         sources_id,
         {"property": SOURCES["enabled"], "checkbox": {"equals": True}},
     )
+    secret_urls = load_secret_calendar_urls()
     sources: list[SourceConfig] = []
     for page in pages:
         source_type = get_select(page, SOURCES["source_type"]) or "URL"
-        ics_url = get_url(page, SOURCES["ics_url"]) or get_text(page, SOURCES["file_path"])
+        if source_type == "Secret URL":
+            secret_key = get_text(page, SOURCES["secret_key"])
+            source_name = get_title(page, SOURCES["name"]) or "Unnamed calendar"
+            if not secret_key:
+                raise RuntimeError(f"{source_name} is Secret URL but Secret Key is blank")
+            raw_url = secret_urls.get(secret_key)
+            if not raw_url:
+                raise RuntimeError(f"Missing shared calendar secret for key {secret_key}")
+            ics_url = google_calendar_share_to_ics(raw_url)
+        else:
+            ics_url = get_url(page, SOURCES["ics_url"]) or get_text(page, SOURCES["file_path"])
+            if source_type == "URL" and ics_url:
+                ics_url = google_calendar_share_to_ics(ics_url)
         if not ics_url:
             continue
         sources.append(
