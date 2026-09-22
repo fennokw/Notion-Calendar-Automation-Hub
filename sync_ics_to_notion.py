@@ -266,17 +266,6 @@ def dates_match(left: Optional[dict[str, Any]], right: Optional[dict[str, Any]])
     return canonical_date(left) == canonical_date(right)
 
 
-def calendar_color(item_type: str, commitment: str) -> str:
-    if item_type == "Test":
-        return "Test"
-    if item_type == "Homework":
-        return "Homework"
-    if commitment == "No":
-        return "No"
-    if commitment == "Done":
-        return "Done"
-    return "Committed" if commitment == "Committed" else "Maybe"
-
 
 def load_sources(notion: NotionClient, sources_id: str) -> list[SourceConfig]:
     pages = notion.query(
@@ -467,9 +456,6 @@ def new_event_properties(source: SourceConfig, event: Event, now: str) -> dict[s
         SCHEDULE["source_fingerprint"]: text_value(event.fingerprint),
         SCHEDULE["sync_managed"]: checkbox_value(True),
         SCHEDULE["import_source"]: select_value("ICS"),
-        SCHEDULE["calendar_color"]: select_value(
-            calendar_color(source.item_type, source.commitment)
-        ),
     }
     if source.area:
         props[SCHEDULE["area"]] = {"multi_select": [{"name": source.area}]}
@@ -518,11 +504,6 @@ def update_event_properties(
         )
     elif not dates_match(personal_date, next_source_date):
         preserved += 1
-
-    item_type = get_select(page, SCHEDULE["type"]) or source.item_type
-    props[SCHEDULE["calendar_color"]] = select_value(
-        calendar_color(item_type, commitment)
-    )
     return props, preserved
 
 
