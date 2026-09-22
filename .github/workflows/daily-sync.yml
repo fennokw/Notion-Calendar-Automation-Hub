@@ -36,6 +36,7 @@ jobs:
           CALENDAR_SOURCES_DATABASE_ID: ${{ vars.CALENDAR_SOURCES_DATABASE_ID }}
           SYNC_RUNS_DATABASE_ID: ${{ vars.SYNC_RUNS_DATABASE_ID }}
           DEFAULT_TIMEZONE: ${{ vars.DEFAULT_TIMEZONE || 'America/New_York' }}
+          SHARED_CALENDAR_URLS_JSON: ${{ secrets.SHARED_CALENDAR_URLS_JSON }}
         run: python sync_ics_to_notion.py
 
       - name: Sync Canvas assignments

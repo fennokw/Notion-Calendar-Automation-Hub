@@ -1,6 +1,6 @@
 # Editable ICS → Notion Calendar Sync
 
-Turn any Google Calendar or standards-compliant ICS feed into **native, editable Notion events**. Calendar feeds are configured in Notion instead of hard-coded in the repository, so adding a calendar is one database row.
+Turn any Google Calendar or standards-compliant ICS feed into **native, editable Notion events**. Calendar feeds can be configured with a direct URL, a repository ICS file, or a GitHub-secret-backed shared-calendar URL.
 
 ## Why this exists
 
@@ -66,6 +66,7 @@ Create one row per calendar. The repository reads every enabled row.
 | --- | --- |
 | `Name` | Human-readable calendar name |
 | `ICS URL` | Direct feed URL returning `BEGIN:VCALENDAR` |
+| `Secret Key` | Lookup key used when `Source Type = Secret URL`; the actual URL stays in GitHub Secrets |
 | `Enabled` | Whether the daily job imports it |
 | `Default Area` | Area assigned only when creating an event |
 | `Default Commitment` | Maybe or Committed, only on creation |
@@ -86,11 +87,12 @@ Optional audit database recording counts and errors for every workflow run.
 
 Open **Settings → Secrets and variables → Actions**.
 
-Add one secret:
+Add these secrets:
 
 | Secret | Value |
 | --- | --- |
 | `NOTION_TOKEN` | Internal Notion integration token |
+| `SHARED_CALENDAR_URLS_JSON` | JSON object mapping safe lookup keys to private/shared calendar URLs |
 
 Add variables:
 
@@ -102,6 +104,29 @@ Add variables:
 | `DEFAULT_TIMEZONE` | `America/New_York` for Boston/Cambridge |
 
 Share all three source databases with the Notion integration. Linked views alone are insufficient; the integration needs access to the original databases.
+
+## Add a secret-backed shared calendar
+
+Use this for team, club, sports, or other shared calendars whose link should not be stored in Notion.
+
+1. In **Settings → Secrets and variables → Actions → Secrets**, create or edit `SHARED_CALENDAR_URLS_JSON`.
+2. Store one JSON object containing any number of calendars, for example:
+
+```json
+{
+  "MIT_LACROSSE_ICS_URL": "https://calendar.google.com/calendar/u/2?cid=...",
+  "ANOTHER_SHARED_CALENDAR": "https://example.com/calendar.ics"
+}
+```
+
+3. In Notion → **Calendar Sources**, set:
+   - `Source Type` = `Secret URL`
+   - `Secret Key` = the JSON key, such as `MIT_LACROSSE_ICS_URL`
+   - choose the default Area / Commitment / Type
+   - enable the source
+4. Run the workflow once.
+
+The sync accepts direct ICS URLs and Google Calendar share URLs containing `cid=`. Google share links are converted to the corresponding public ICS feed automatically when possible.
 
 ## Add a Google Calendar
 
