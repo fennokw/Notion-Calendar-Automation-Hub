@@ -37,7 +37,7 @@ Example:
 
 ```json
 {
-  "MIT_LACROSSE_ICS_URL": "https://calendar.google.com/calendar/u/2?cid=...",
+  "SWIM_TEAM_ICS_URL": "https://calendar.google.com/calendar/u/2?cid=...",
   "TEAM_CALENDAR_URL": "https://example.com/team.ics"
 }
 ```
@@ -45,7 +45,7 @@ Example:
 In Notion, a Calendar Source row uses:
 
 - `Source Type = Secret URL`
-- `Secret Key = MIT_LACROSSE_ICS_URL`
+- `Secret Key = SWIM_TEAM_ICS_URL`
 
 The actual calendar URL never needs to be written into the Notion row.
 
@@ -265,8 +265,8 @@ Example shared-calendar secret:
 
 ```json
 {
-  "MIT_LACROSSE_ICS_URL": "https://calendar.google.com/calendar/u/2?cid=...",
-  "FRAT_CALENDAR_URL": "https://calendar.google.com/calendar/ical/.../basic.ics"
+  "SWIM_TEAM_ICS_URL": "https://calendar.google.com/calendar/u/2?cid=...",
+  "CLUB_CALENDAR_URL": "https://calendar.google.com/calendar/ical/.../basic.ics"
 }
 ```
 
@@ -369,9 +369,3 @@ Canvas requires `CANVAS_TOKEN`; the ICS script does not.
 - The workflow does not print the shared-calendar secret map.
 - Canvas quiz endpoint failures degrade gracefully instead of blocking assignment import.
 - Concurrent GitHub workflow executions are serialized.
-
-## Intended repository name
-
-**Notion-Calendar-Automation-Hub**
-
-The name reflects the repository's current role as the single automation backend for Notion scheduling, calendar feeds, Canvas coursework, and Notion Calendar presentation.
