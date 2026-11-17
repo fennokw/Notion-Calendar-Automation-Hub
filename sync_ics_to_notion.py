@@ -491,8 +491,9 @@ def new_event_properties(source: SourceConfig, event: Event, now: str) -> dict[s
     props: dict[str, Any] = {
         SCHEDULE["name"]: title_value(event.name),
         SCHEDULE["date"]: date_value(event.start, event.end),
-        SCHEDULE["type"]: select_value(source.item_type),
-        SCHEDULE["commitment"]: select_value(source.commitment),
+        SCHEDULE["type"]: select_value("Task" if source.item_type in {"Homework", "Test", "Task"} else "Event"),
+        SCHEDULE["commitment"]: {"select": None} if source.item_type in {"Homework", "Test", "Task"} else select_value(source.commitment),
+        SCHEDULE["completed"]: checkbox_value(False),
         SCHEDULE["calendar_source"]: relation_value(source.page_id),
         SCHEDULE["external_id"]: text_value(event.external_id),
         SCHEDULE["source_name"]: text_value(event.name),
@@ -538,7 +539,10 @@ def update_event_properties(
     }
 
     commitment = get_select(page, SCHEDULE["commitment"]) or source.commitment
-    if not get_select(page, SCHEDULE["commitment"]):
+    is_task = get_select(page, SCHEDULE["type"]) in {"Task", "Homework", "Test"}
+    if is_task:
+        props[SCHEDULE["type"]] = select_value("Task")
+    if not is_task and not get_select(page, SCHEDULE["commitment"]):
         props[SCHEDULE["commitment"]] = select_value(commitment)
     if follow or name_is_unedited or commitment == "No":
         props[SCHEDULE["name"]] = title_value(event.name, strikethrough=commitment == "No")

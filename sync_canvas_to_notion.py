@@ -119,16 +119,17 @@ def properties(
     *,
     record_key: Optional[str] = None,
 ) -> dict[str, Any]:
-    commitment = get_select(existing, SCHEDULE["commitment"]) if existing else None
-    commitment = commitment or "Maybe"
+    previous_done = bool(((existing or {}).get("properties", {}).get(SCHEDULE["completed"]) or {}).get("checkbox"))
     submission = item.get("submission") or {}
     done = submission.get("workflow_state") in {"submitted", "graded"}
     name = " ".join((item.get("name") or "Untitled assignment").split())
     return {
-        SCHEDULE["name"]: title_value(name, strikethrough=commitment == "No" or done),
+        SCHEDULE["name"]: title_value(name, strikethrough=False),
         SCHEDULE["date"]: date_value(item["due_at"]),
-        SCHEDULE["type"]: select_value(kind),
-        SCHEDULE["commitment"]: select_value(commitment),
+        SCHEDULE["type"]: select_value("Task"),
+        SCHEDULE["task_kind"]: select_value(kind),
+        SCHEDULE["completed"]: checkbox_value(previous_done or done),
+        SCHEDULE["commitment"]: {"select": None},
         SCHEDULE["area"]: {"multi_select": [{"name": "School"}]},
         SCHEDULE["notes"]: text_value(course.get("name") or "Canvas"),
         SCHEDULE["external_id"]: text_value(f"canvas:{item['id']}"),
