@@ -16,6 +16,8 @@ SCHEDULE = {
     "name": "Name",
     "date": "Date",
     "type": "Type",
+    "completed": "Completed",
+    "task_kind": "Task kind",
     "commitment": "Commitment",
     "status": "Status",
     "area": "Area",

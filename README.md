@@ -1,3 +1,11 @@
+# BestNDS compatibility
+
+This hub integrates Canvas assignments and Google Calendar/iCalendar feeds with [Kaden’s BestNDS](https://github.com/fennokw/BestNDS). Calendar placement always uses **Date**; **Source Date** remains import metadata. Canvas assignments are **Task**, with optional **Task kind** Homework/Test and a **Completed** checkbox. Commitment applies only to events.
+
+Before running this version, add Completed (checkbox) and Task kind (select: General, Homework, Test) to Schedule & Tasks, or use the BestNDS blank setup. Existing IDs and relations must remain unchanged to avoid duplicates. Submitted/graded Canvas work is checked off; manual checks are preserved. Imported events never reset your completion checkbox on subsequent runs. This is one-way importing, not two-way Google Calendar synchronization.
+
+Legacy setup reference follows. Its Homework/Test Type and title-strikethrough descriptions are superseded by the rules above.
+
 # Notion Calendar Automation Hub
 
 An all-in-one automation layer for a Notion-based calendar and task system.

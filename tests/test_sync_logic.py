@@ -186,7 +186,7 @@ END:VCALENDAR\r
 def test_google_calendar_share_link_converts_to_public_ics():
     from sync_ics_to_notion import google_calendar_share_to_ics
 
-    share = "https://calendar.google.com/calendar/u/2?cid=OGI2YTkwNjg0MzBhN2E4NjdmMzdlOWZlNTU2MTllYTMzNGZkNzBkN2ZiYTZkMDMyMjg3YTJiM2E5NTgwOTBhNEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t"
+    share = "https://calendar.google.com/calendar/u/2?cid=ZXhhbXBsZUBncm91cC5jYWxlbmRhci5nb29nbGUuY29t"
     result = google_calendar_share_to_ics(share)
     assert result.endswith("/public/basic.ics")
     assert "group.calendar.google.com" in result
@@ -197,3 +197,14 @@ def test_non_google_url_is_unchanged():
 
     url = "https://example.com/team.ics"
     assert google_calendar_share_to_ics(url) == url
+
+
+def test_canvas_writes_task_and_preserves_manual_completion(monkeypatch):
+    monkeypatch.setenv('CANVAS_TOKEN','test')
+    from sync_canvas_to_notion import properties
+    item={'id':1,'name':'Problem set','due_at':'2026-11-20T17:00:00Z','submission':{'workflow_state':'unsubmitted'}}
+    result=properties(item,{'id':2,'name':'Course'},{'properties':{'Completed':{'checkbox':True}}},'Homework')
+    assert result['Type']['select']['name']=='Task'
+    assert result['Task kind']['select']['name']=='Homework'
+    assert result['Completed']['checkbox'] is True
+    assert result['Commitment']['select'] is None
